@@ -14,7 +14,7 @@ enum Token {
 #[derive(Debug)]
 enum LexerError {
 	InvalidCharacter,
-	UnterminatedString
+	UnterminatedString,
 }
 
 struct Lexer<'a> {
@@ -28,14 +28,34 @@ impl <'a> Lexer<'a> {
 		let mut string = String::new();
 
 		let chars = &mut self.input[self.pos..].char_indices();
+		let mut escaped = false;
 
 		while let Some((_, c)) = &mut chars.next() {
 			self.pos += c.len_utf8();
-
+			if escaped {
+				escaped = false;
+				string.push(*c);
+				continue;
+			}
 			match c {
 				'"' => return Ok(Token::String(string)),
+				'\\' => escaped = true,
 				_ => string.push(*c)
 			}
+		}
+
+		Err(LexerError::UnterminatedString)
+	}
+
+	fn scan_number(&mut self) -> Result<Token, LexerError> {
+
+		let mut number = String::new();
+
+		let chars = &mut self.input[self.pos..].chars();
+
+		while let Some(c) = chars.next() {
+						
+			self.pos += c.len_utf8();
 		}
 
 		Err(LexerError::UnterminatedString)
