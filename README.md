@@ -1,2 +1,2 @@
 # ft_turing
-e goal of this project is to write a program able to simulate a single headed, single tape Turing machine from a machine description provided in json
+The goal of this project is to write a program able to simulate a single headed, single tape Turing machine from a machine description provided in json
