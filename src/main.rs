@@ -1,5 +1,6 @@
 
-use json::parse;
+use json::{self};
+
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -11,15 +12,10 @@ fn main() {
     let filename = &args[1];
     let input = std::fs::read_to_string(filename).unwrap();
 
-    match parse(&input) {
-        Ok(tokens) => {
-            for token in tokens {
-                println!("{:?}", token);
-            }
-        }
-        Err(error) => println!("{:?}", error),
-    }
+    let value = json::parse(&input).unwrap();
+    println!("{:#?}", value);
 }
+
 
 
 

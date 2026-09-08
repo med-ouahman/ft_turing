@@ -1,5 +1,6 @@
 /* Json Lexer */
 
+#[derive(PartialEq)]
 #[derive(Debug)]
 pub enum Token {
     Lbrace,
@@ -8,6 +9,8 @@ pub enum Token {
     Rbracket,
     Comma,
     Colon,
+	Boolean(bool),
+	Null,
     Number(String),
     String(String),
 }
@@ -38,6 +41,14 @@ fn is_number_start(&self, c: char) -> bool {
 	c == '-' || c.is_ascii_digit()
 }
 
+fn is_bool_start(&self, c: char) -> bool {
+	c == 't' || c == 'f'
+}
+
+fn is_null_start(&self, c: char) -> bool {
+	c == 'n'
+}
+
 fn scan_string(&mut self) -> Result<Token, LexerError> {
 	
 	let mut string = String::new();
@@ -66,6 +77,57 @@ fn is_token_end(c: char) -> bool {
 		|| c == ','
 		|| c == ']'
 		|| c == '}'
+}
+
+fn scan_true(&mut self) -> Result<Token, LexerError> {
+    let end = self.pos + 4;
+
+    if end > self.input.len() {
+        return Err(LexerError::InvalidCharacter);
+    }
+
+    if &self.input[self.pos..end] != "true" {
+        return Err(LexerError::InvalidCharacter);
+    }
+
+    self.pos = end;
+
+    Ok(Token::Boolean(true))
+}
+
+fn scan_false(&mut self) -> Result<Token, LexerError> {
+    let end = self.pos + 5;
+
+    if end > self.input.len() {
+        return Err(LexerError::InvalidCharacter);
+    }
+
+    if &self.input[self.pos..end] != "false" {
+        return Err(LexerError::InvalidCharacter);
+    }
+
+    self.pos = end;
+
+    Ok(Token::Boolean(false))
+}
+
+fn scan_bool(&mut self) -> Result<Token, LexerError> {
+
+	match self.current_char() {
+		Some('t') => return self.scan_true(),
+		Some('f') => return self.scan_false(),
+		_ => return Err(LexerError::InvalidCharacter)
+	}
+}
+
+fn scan_null(&mut self) -> Result<Token, LexerError> {
+	let end = self.pos + 4;
+
+	if &self.input[self.pos..end] != "null" {
+		return Err(LexerError::InvalidCharacter);
+	}
+
+	Ok(Token::Null)
 }
 
 fn scan_exponent(&mut self) -> Result<String, LexerError> {
@@ -225,6 +287,19 @@ fn next(&mut self) -> Result<Option<Token>, LexerError> {
 				if self.is_number_start(c) {
 					match self.scan_number() {
 						Ok(number) => return Ok(Some(number)),
+						Err(err) => return Err(err)
+					}
+				}
+				if self.is_bool_start(c) {
+					match self.scan_bool() {
+						Ok(token) => return Ok(Some(token)),
+						Err(err) => return Err(err)
+					}
+				}
+
+				if self.is_null_start(c) {
+					match self.scan_null() {
+						Ok(token) => return Ok(Some(token)),
 						Err(err) => return Err(err)
 					}
 				}
