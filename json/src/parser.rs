@@ -2,7 +2,7 @@
 
 
 use std::collections::HashMap;
-use crate::lexer::{Lexer, LexerError, Token};
+use crate::lexer::{Lexer, Token};
 use crate::value::JsonValue::{self};
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ pub struct Parser {
 }
 
 impl Parser {
-pub fn new(input: &str) -> Result<Self, LexerError> {
+pub fn new(input: &str) -> Result<Self, ParseError> {
     let mut lexer = Lexer::new(input);
     match lexer.lex_all() {
         Ok(tokens) => {
@@ -29,7 +29,7 @@ pub fn new(input: &str) -> Result<Self, LexerError> {
                 pos: 0
             })
         }
-        Err(err) => return Err(err)
+        Err(_) => return Err(ParseError::InvalidJsonFormat)
     }
     
 }
