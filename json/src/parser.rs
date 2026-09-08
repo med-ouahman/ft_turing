@@ -10,7 +10,8 @@ pub enum ParseError {
     MissingOpenBracket,
     ParseNumberError,
     UnexpectedTokenError,
-    UnexpectedEndError
+    UnexpectedEndError,
+    InvalidJsonFormat
 }
 
 pub struct Parser {
@@ -57,11 +58,15 @@ fn expect(&mut self, expected: Token) -> Result<(), ParseError>{
     }
 }
 
-fn parse_number(&mut self) -> Result<f64, ParseError> {
+fn parse_number(&mut self) -> Result<JsonValue, ParseError> {
     match self.current() {
         Some(Token::Number(number)) => {
             match number.parse::<f64>() {
-                Ok(f) => return  Ok(f),
+                Ok(f) => {
+                    self.advance();
+                    Ok(JsonValue::Number(f))
+                }
+
                 Err(_) => Err(ParseError::ParseNumberError)
             }
         }
@@ -69,35 +74,52 @@ fn parse_number(&mut self) -> Result<f64, ParseError> {
     }
 }
 
-fn parse_string(&mut self) -> Result<String, ParseError> {
+fn parse_string(&mut self) -> Result<JsonValue, ParseError> {
     match self.current() {
-        Some(Token::String(s)) => return Ok(s.to_string()),
+        Some(Token::String(s)) => {
+            let value = s.to_string();
+            self.advance();
+            Ok(JsonValue::String(value))
+        }
         _ => Err(ParseError::UnexpectedTokenError)
     }
 }
 
-fn parse_bool(&mut self) -> Result<bool, ParseError> {
-    Ok(false)
+fn parse_bool(&mut self) -> Result<JsonValue, ParseError> {
+    match self.current() {
+        Some(Token::Boolean(b)) => {
+            let value = *b;
+            self.advance();
+            Ok(JsonValue::Bool(value))
+        }
+        _ => return Err(ParseError::UnexpectedTokenError)
+    }
 }
 
-fn parse_null(&mut self) -> Result<(), ParseError> {
-    Ok(())
+fn parse_null(&mut self) -> Result<JsonValue, ParseError> {
+    match self.current() {
+        Some(Token::Null) => {
+            self.advance();
+            Ok(JsonValue::Null)
+        }
+        _ => return Err(ParseError::UnexpectedTokenError)
+    }
 }
 
-fn parse_array(&mut self) -> Result<Vec<JsonValue>, ParseError> {
-    self.advance(); // Skip the opening bracket
+fn parse_array(&mut self) -> Result<JsonValue, ParseError> {
+    
+    self.advance();
+
     let mut array = Vec::<JsonValue>::new();
-
-    // loop until ']' | ParseError
     
     loop {
         match self.current() {
             Some(Token::Rbracket) => {
-                self.advance(); // Skip the closing bracket
+                self.advance();
                 break;
             }
             Some(_) => {
-                let value = self.parse()?;
+                let value = self.parse_value()?;
                 array.push(value);
             }
             None => return Err(ParseError::UnexpectedEndError)
@@ -105,20 +127,20 @@ fn parse_array(&mut self) -> Result<Vec<JsonValue>, ParseError> {
 
         match self.current() {
             Some(Token::Comma) => {
-                self.advance(); // Skip the comma
+                self.advance();
             }
             Some(Token::Rbracket) => {
-                self.advance(); // Skip the closing bracket
+                self.advance();
                 break;
             }
             _ => return Err(ParseError::UnexpectedTokenError)
         }
     }
 
-    Ok(array)
+    Ok(JsonValue::Array(array))
 }
 
-fn parse_object(&mut self) -> Result<HashMap<String, JsonValue>, ParseError> {
+fn parse_object(&mut self) -> Result<JsonValue, ParseError> {
     
     self.advance();
     let mut object = HashMap::new();
@@ -129,7 +151,7 @@ fn parse_object(&mut self) -> Result<HashMap<String, JsonValue>, ParseError> {
                 let key = key.to_string();
                 self.advance();
                 self.expect(Token::Colon)?;
-                let value = self.parse()?;
+                let value = self.parse_value()?;
 
                 object.insert(key, value);
             }
@@ -152,66 +174,30 @@ fn parse_object(&mut self) -> Result<HashMap<String, JsonValue>, ParseError> {
         }
     }
 
-    Ok(object)
+    Ok(JsonValue::Object(object))
+}
+
+fn parse_value(&mut self) -> Result<JsonValue, ParseError> {
+
+    match self.current() {
+        Some(Token::String(_))    =>  self.parse_string(),
+        Some(Token::Number(_))    =>  self.parse_number(),
+        Some(Token::Lbrace)       =>  self.parse_object(),
+        Some(Token::Lbracket)     =>  self.parse_array(),
+        Some(Token::Boolean(_))   =>  self.parse_bool(),
+        Some(Token::Null)         =>  self.parse_null(),
+        None => Err(ParseError::UnexpectedTokenError),
+        _ => return Err(ParseError::MissingOpenBracket)    
+    }
 }
 
 pub fn parse(&mut self) -> Result<JsonValue, ParseError> {
+    let value = self.parse_value()?;
 
-    for token in &self.tokens {
-        println!("{:#?}", token);
+    match self.current() {
+        None => Ok(value),
+        _ => Err(ParseError::UnexpectedEndError)
     }
-
-    loop {
-
-        match self.current() {
-            Some(token) => {
-                match token {
-                    Token::String(_) => {
-                        match self.parse_string() {
-                            Ok(s) => return Ok(JsonValue::String(s)),
-                            Err(err) => return Err(err)
-                        }
-                    }
-                    Token::Number(_) => {
-                        match self.parse_number() {
-                            Ok(n) => return Ok(JsonValue::Number(n)),
-                            Err(e) => return Err(e)
-                        }
-                    }
-                    Token::Lbrace => {
-                        match self.parse_object() {
-                            Ok(obj) => return Ok(JsonValue::Object(obj)),
-                            Err(err) => return Err(err)
-                        }
-                    }
-                    Token::Lbracket => {
-                        match self.parse_array() {
-                            Ok(arr) => return Ok(JsonValue::Array(arr)),
-                            Err(err) => return Err(err)
-                        }
-                    }
-                    Token::Boolean(_) => {
-                        match self.parse_bool() {
-                            Ok(b) => return Ok(JsonValue::Bool(b)),
-                            Err(err) => return  Err(err)
-                        }
-                    }
-                    Token::Null => {
-                        match self.parse_null() {
-                            Ok(_) => return Ok(JsonValue::Null),
-                            Err(err) => return Err(err)
-                        }
-                    }
-                    _ => return Err(ParseError::MissingOpenBracket)
-                    
-                };
-            }
-            None => break
-        }
-        
-    }
-
-    Ok(JsonValue::Bool(true))
 }
 
 }

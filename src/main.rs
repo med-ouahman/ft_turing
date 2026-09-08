@@ -1,6 +1,7 @@
+mod machine;
 
 use json::{self};
-
+use crate::machine::Machine;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -15,7 +16,3 @@ fn main() {
     let value = json::parse(&input).unwrap();
     println!("{:#?}", value);
 }
-
-
-
-
