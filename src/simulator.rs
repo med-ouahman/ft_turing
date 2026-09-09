@@ -20,12 +20,15 @@ pub fn from_machine(machine: Machine, tape: Tape) -> Self {
 
 pub fn run(&mut self) -> Result<(), MachineError> {
 
+    println!("Machine: {}", self.machine.get_name());
+
     while !self.machine.is_final(&self.state) {
         
         let transition = match self.machine.transition(&self.state, self.tape.read()) {
             Some(transition) => transition,
-            None => return Err(MachineError::InvalidInput),
+            None => return Err(MachineError::InvalidTransition),
         };
+        
         let next_state = transition.to_state.clone();
         let action = transition.action.clone();
         self.tape.write(transition.write);
@@ -36,6 +39,7 @@ pub fn run(&mut self) -> Result<(), MachineError> {
         }
         self.state = next_state;
     }
+
     Ok(())
 }
 }

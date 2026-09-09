@@ -1,6 +1,6 @@
 
 
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, fs::read};
 
 use json::{self, JsonValue, Parser};
 
@@ -10,6 +10,7 @@ use json::{self, JsonValue, Parser};
 pub enum MachineError {
     InvalidInput,
     InvalidDescription,
+    InvalidTransition,
     MissingField(String)
 }
 
@@ -75,6 +76,9 @@ fn required_character(object: &HashMap<String, JsonValue>, field: &str) -> Resul
     Self::single_character(&value)
 }
 
+pub fn get_name(&self) -> String {
+    self.descriptor.name.clone()
+}
 
 pub fn from_json(json_value: json::JsonValue) -> Result<Self, MachineError> {
     let object = match json_value {
@@ -210,27 +214,13 @@ pub fn from_json_file(file: &str) -> Result<Self, MachineError> {
     Self::from_json(json_value)
 }
 
-fn validate_input(&self, input: &str) -> Result<(), MachineError> {
+pub fn validate_input(&self, input: &str) -> Result<(), MachineError> {
     if input.chars().all(|character| self.descriptor.alphabet.contains(&character)
         && character != self.descriptor.blank) {
         Ok(())
     } else {
         Err(MachineError::InvalidInput)
     }
-}
-
-
-fn step(&mut self) {
-
-}
-
-
-pub fn run(&mut self, input: &str) -> Result<(), MachineError> {
-    self.validate_input(input)?;
-
-
-    Err(MachineError::InvalidInput)
-
 }
 
 }

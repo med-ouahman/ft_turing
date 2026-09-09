@@ -28,7 +28,11 @@ fn main() {
         }
     };
 
+    machine.validate_input(&input).unwrap();
+
     let tape = Tape::new(&input, machine.blank_symbol());
+
     let mut simulator = Simulator::from_machine(machine, tape);
+    
     simulator.run().unwrap();
 }
