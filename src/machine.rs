@@ -1,6 +1,6 @@
 
 
-use std::{collections::{HashMap, HashSet}, fs::read};
+use std::{collections::{HashMap, HashSet}, print, println};
 
 use json::{self, JsonValue, Parser};
 
@@ -33,7 +33,7 @@ struct MachineDescriptor {
 }
 
 pub struct Machine {
-    descriptor: MachineDescriptor,
+    descriptor: MachineDescriptor
 }
 
 impl Machine {
@@ -74,10 +74,6 @@ fn required_string(object: &HashMap<String, JsonValue>, field: &str) -> Result<S
 fn required_character(object: &HashMap<String, JsonValue>, field: &str) -> Result<char, MachineError> {
     let value = Self::required_string(object, field)?;
     Self::single_character(&value)
-}
-
-pub fn get_name(&self) -> String {
-    self.descriptor.name.clone()
 }
 
 pub fn from_json(json_value: json::JsonValue) -> Result<Self, MachineError> {
@@ -221,6 +217,27 @@ pub fn validate_input(&self, input: &str) -> Result<(), MachineError> {
     } else {
         Err(MachineError::InvalidInput)
     }
+}
+
+pub(crate) fn display(&self) {
+    println!("Machine: {}", self.descriptor.name);
+    print!("Alphabet: [ ");
+    for a in &self.descriptor.alphabet {
+        print!("{a} ");
+    }
+    println!(" ]");
+    print!("States: [ ");
+    for state in &self.descriptor.states {
+        print!("{state} ");
+    }
+    println!(" ]");
+    println!("Initial: {}", self.descriptor.initial);
+    print!("Finals: [ ");
+    for state in &self.descriptor.finals {
+        print!("{state} ");
+    }
+    println!(" ]");
+
 }
 
 }

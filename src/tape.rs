@@ -1,3 +1,5 @@
+use std::{print};
+
 
 pub struct Tape {
 	cells: Vec<char>,
@@ -36,6 +38,18 @@ pub fn move_right(&mut self) {
 	if self.position == self.cells.len() {
 		self.cells.push(self.blank);
 	}
+}
+
+pub fn display(&self) {
+	print!("[ ");
+	for (index, cell) in self.cells.iter().enumerate() {
+		if index == self.position {
+			print!("<{cell}> ");
+		} else {
+			print!("{cell} ");
+		}
+	}
+	print!("] ");
 }
 
 }

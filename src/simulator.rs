@@ -1,4 +1,6 @@
 
+use std::println;
+
 use crate::machine::{Machine, MachineError};
 use crate::tape::Tape;
 
@@ -20,18 +22,27 @@ pub fn from_machine(machine: Machine, tape: Tape) -> Self {
 
 pub fn run(&mut self) -> Result<(), MachineError> {
 
-    println!("Machine: {}", self.machine.get_name());
-
+    self.machine.display();
     while !self.machine.is_final(&self.state) {
         
+        let state = self.state.clone();
         let transition = match self.machine.transition(&self.state, self.tape.read()) {
             Some(transition) => transition,
             None => return Err(MachineError::InvalidTransition),
         };
         
+        
+        let read_symbol = self.tape.read();
         let next_state = transition.to_state.clone();
         let action = transition.action.clone();
+        let write_symbol = transition.write;
+        
+        self.tape.display();
+
+        println!("({state}, {read_symbol}) -> ({next_state}, {write_symbol}, {action})");
+
         self.tape.write(transition.write);
+
         if action == "LEFT" {
             self.tape.move_left();
         } else {
